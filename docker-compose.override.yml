@@ -1,0 +1,7 @@
+# The original MinIO image is unavailable. Build the same release from source.
+services:
+  minio:
+    image: industry-minio:RELEASE.2023-03-20T20-16-18Z
+    build:
+      context: ./docker/minio
+    entrypoint: []
