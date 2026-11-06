@@ -24,6 +24,9 @@ yarn-error.log*
 .env.*
 !.env.example
 
+# Local diagrams
+*.drawio
+
 # IDE
 .idea/
 .vscode/
