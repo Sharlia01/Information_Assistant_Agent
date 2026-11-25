@@ -150,6 +150,7 @@ class ResearchState(TypedDict):
     critic_feedback: List[Dict[str, Any]]   # 评论家反馈
     unresolved_issues: int                  # 未解决问题数
     quality_score: float                    # 质量评分
+    review_passed: bool                    # 最近一次审核是否明确通过
     pending_search_queries: List[str]       # 待执行的补充搜索查询（审核后需要补充的）
 
     # 元数据
@@ -198,6 +199,7 @@ def create_initial_state(
         critic_feedback=[],
         unresolved_issues=0,
         quality_score=0.0,
+        review_passed=False,
         pending_search_queries=[],
         logs=[],
         errors=[],

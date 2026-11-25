@@ -1,0 +1,1636 @@
+{
+  "schema_version": "1.0",
+  "dataset_id": "nev_pilot_v1",
+  "created_at": "2026-11-09",
+  "split": "development_pilot",
+  "human_review_status": "pending",
+  "scope": "5道新能源汽车历史任务，用于校准标注和发现缺陷，不是独立保留集，不支持泛化质量结论。",
+  "instructions": [
+    "只将每题的query及materials（如有）交给研究系统；reference中的事实、来源标注和评分要求不得作为任务输入。",
+    "开放检索题只接受as_of_date之前发布的证据；采集时间晚于截止日不改变证据原发布时间。",
+    "第五题必须提供materials并禁用外部补值。若现有入口不能正确注入材料，应标not_run，不可改为空材料或开放检索后继续同口径评分。",
+    "固定资料回放与实时搜索必须分开标记，不能把来源卡直接当作原始搜索结果回放。"
+  ],
+  "evidence_note": "已阅读公开来源制作的结构化证据卡；只保留短摘录与事实转述，不冒充全文快照。BYD依据PDF文本表格核对，未完成截图核验。国家统计局使用可访问的官方镜像路径。",
+  "scoring_rules": {
+    "dimensions": {
+      "requirements": {
+        "formula": "sum(requirement_score) / (2 * number_of_requirements)",
+        "scale": [
+          0,
+          1,
+          2
+        ],
+        "notes": "逐条按每题reference.requirements中的评分锚点评分；不是最终总分。"
+      },
+      "facts": {
+        "statuses": [
+          "correct",
+          "incorrect",
+          "missing",
+          "unverifiable"
+        ],
+        "formula": "correct / all_required_key_facts",
+        "notes": "correct必须同时满足对象、指标、范围、时间、单位和数值；missing不可从分母移除。另报回答过的事实准确率，不能靠少答提高主指标。"
+      },
+      "citations": {
+        "statuses": [
+          "supports",
+          "partially_supports",
+          "does_not_support",
+          "unverifiable",
+          "missing"
+        ],
+        "notes": "检查论断与引用原文，不以URL能打开代替支持。两种比率分别为：完全支持的已引用论断/全部已引用论断；有完全支持引用的重要可核查论断/全部重要可核查论断。无法抓取单列，不能强行判真或假。"
+      },
+      "extra_claims": {
+        "statuses": [
+          "supported",
+          "unsupported",
+          "unverifiable",
+          "explicit_inference"
+        ],
+        "notes": "人工逐条审阅报告中未列入key_facts的可核查实质论断，记录位置和证据。明确标记的合理推断不自动判错。不得仅检查标准事实。"
+      },
+      "charts": {
+        "statuses": [
+          "correct",
+          "incorrect",
+          "not_applicable",
+          "unverifiable"
+        ],
+        "notes": "若生成图表，核对数值、标签、时间、范围和单位。缺少显式要求的表/图记覆盖失败；未要求图片时不得仅因没有图片扣分。"
+      },
+      "critical_errors": {
+        "notes": "独立记录数量、类型、报告位置及证据；出现核心事实伪造、来源伪造等严重错误不得标为质量合格。"
+      },
+      "bounded_missing": {
+        "notes": "第五题五个unanswerable_targets逐项检查为未知且说明理由；不把null当0。开放检索失败不等于未知事实不存在。"
+      },
+      "execution": {
+        "statuses": [
+          "completed",
+          "failed",
+          "timed_out",
+          "not_run"
+        ],
+        "notes": "另存completion_reason/review_passed/耗时。系统自评分不作为外部质量评分；运行失败必须计入完成率，不能删除。"
+      }
+    },
+    "numeric_policy": {
+      "normalization": "先统一单位，再应用每题reference.facts中的绝对容差；百分比增速的容差单位为百分点。",
+      "reported": "0.05万辆等容差仅处理公布精度，不允许对象、年份或范围错误。整数辆数默认精确；等价中文大数表达可归一化。",
+      "derived": "按formula及input_fact_ids复算；不能算入来源直接公布事实。",
+      "alternative_sources": "开放题允许截止日前其他可信来源。发生不一致时记录来源和口径，人工裁决；不能强行按字符串匹配唯一答案。"
+    },
+    "review_protocol": [
+      "先检查题目范围和证据日期，再逐条查覆盖和事实。",
+      "评分记录另存于实际运行结果中，必须填写报告位置、证据ID或新证据链接和解释；尚未评审不能记为0分。",
+      "分项展示结果，不先加权成一个总分；保留严重错误清单。",
+      "第二位人工评审者复核首批标注及争议项后，才将human_review_status改为approved。",
+      "首次跑完以五题逐案分析为主；同一来源在多题复用，样本并不独立，不据此估计行业总体准确率。"
+    ]
+  },
+  "cases": [
+    {
+      "id": "pilot_01",
+      "category": "time_series",
+      "as_of_date": "2025-03-01",
+      "mode": "open_web",
+      "query": "请仅使用截至2025年3月1日已发布的资料，分析中国2022—2024年新能源汽车销量趋势。采用中国汽车工业协会年度口径，列出三年的销量、销量同比增速及新能源汽车占汽车新车总销量的比重；计算2022至2024年销量的两年复合增长率和新车销量占比增加的百分点，并给出趋势图或可直接绘图的数据表。区分销量、产量、保有量和零售口径，逐项注明来源。",
+      "reference": {
+        "requirements": [
+          {
+            "id": "R1",
+            "text": "列三年销量及同比",
+            "fact_ids": [
+              "F2022_sales",
+              "F2023_sales",
+              "F2024_sales",
+              "F2022_sales_yoy",
+              "F2023_sales_yoy",
+              "F2024_sales_yoy"
+            ],
+            "score_2": "三年六项完整，单位与年份正确",
+            "score_1": "部分年份或同比遗漏，其余正确",
+            "score_0": "未回答，或核心内容错误；同时记录事实错误，不能以提到关键词代替完成。"
+          },
+          {
+            "id": "R2",
+            "text": "列三年新能源汽车新车销量占比",
+            "fact_ids": [
+              "F2022_share",
+              "F2023_share",
+              "F2024_share"
+            ],
+            "score_2": "三项正确且说明分母是汽车新车总销量",
+            "score_1": "有正确占比，但年份不全或分母未说明",
+            "score_0": "未回答，或核心内容错误；同时记录事实错误，不能以提到关键词代替完成。"
+          },
+          {
+            "id": "R3",
+            "text": "两年销量CAGR",
+            "fact_ids": [
+              "D_sales_cagr"
+            ],
+            "score_2": "给出约36.68%及两年复合计算方法",
+            "score_1": "数值正确但方法未说明",
+            "score_0": "未回答，或核心内容错误；同时记录事实错误，不能以提到关键词代替完成。"
+          },
+          {
+            "id": "R4",
+            "text": "占比百分点变化",
+            "fact_ids": [
+              "D_share_change"
+            ],
+            "score_2": "15.3个百分点，明确不是相对增长15.3%",
+            "score_1": "数值正确但百分点措辞不清",
+            "score_0": "未回答，或核心内容错误；同时记录事实错误，不能以提到关键词代替完成。"
+          },
+          {
+            "id": "R5",
+            "text": "趋势及可绘图数据",
+            "fact_ids": [],
+            "score_2": "图表或数据表包含三年数据，指出销量上升、同比增速放缓，引用可追溯",
+            "score_1": "有趋势描述但缺表或来源不完整",
+            "score_0": "未回答，或核心内容错误；同时记录事实错误，不能以提到关键词代替完成。"
+          }
+        ],
+        "critical_errors": [
+          "把年末保有量或乘用车零售替代中汽协销量",
+          "把2022—2024按三年复合期计算",
+          "把15.3个百分点写成相对增幅15.3%"
+        ],
+        "acceptable_variations": [
+          "CAGR可写36.7%；销量可等价转换为辆或百万辆",
+          "不强制输出图片，带单位的数据表可满足要求",
+          "按公布年度数值计算的同比与公告差异在0.1个百分点内可接受，须说明重算"
+        ],
+        "facts": [
+          {
+            "id": "F2022_production",
+            "kind": "reported",
+            "subject": "中国新能源汽车",
+            "metric": "产量",
+            "value": 705.8,
+            "unit": "万辆",
+            "period": "2022年全年",
+            "scope": "中国汽车工业协会年度汽车行业口径；非国内乘用车零售或年末保有量",
+            "evidence": [
+              {
+                "source_id": "S01",
+                "locator": "二、1—12月新能源汽车段"
+              }
+            ],
+            "absolute_tolerance": 0.05,
+            "required": false
+          },
+          {
+            "id": "F2022_sales",
+            "kind": "reported",
+            "subject": "中国新能源汽车",
+            "metric": "销量",
+            "value": 688.7,
+            "unit": "万辆",
+            "period": "2022年全年",
+            "scope": "中国汽车工业协会年度汽车行业口径；非国内乘用车零售或年末保有量",
+            "evidence": [
+              {
+                "source_id": "S01",
+                "locator": "二、1—12月新能源汽车段"
+              }
+            ],
+            "absolute_tolerance": 0.05,
+            "required": true
+          },
+          {
+            "id": "F2022_sales_yoy",
+            "kind": "reported",
+            "subject": "中国新能源汽车",
+            "metric": "销量同比增速",
+            "value": 93.4,
+            "unit": "%",
+            "period": "2022年全年",
+            "scope": "中国汽车工业协会年度汽车行业口径；非国内乘用车零售或年末保有量",
+            "evidence": [
+              {
+                "source_id": "S01",
+                "locator": "二、1—12月新能源汽车段"
+              }
+            ],
+            "absolute_tolerance": 0.05,
+            "required": true
+          },
+          {
+            "id": "F2022_share",
+            "kind": "reported",
+            "subject": "中国新能源汽车",
+            "metric": "占汽车新车总销量比重",
+            "value": 25.6,
+            "unit": "%",
+            "period": "2022年全年",
+            "scope": "中国汽车工业协会年度汽车行业口径；非国内乘用车零售或年末保有量",
+            "evidence": [
+              {
+                "source_id": "S01",
+                "locator": "二、1—12月新能源汽车段"
+              }
+            ],
+            "absolute_tolerance": 0.05,
+            "required": true
+          },
+          {
+            "id": "F2023_production",
+            "kind": "reported",
+            "subject": "中国新能源汽车",
+            "metric": "产量",
+            "value": 958.7,
+            "unit": "万辆",
+            "period": "2023年全年",
+            "scope": "中国汽车工业协会年度汽车行业口径；非国内乘用车零售或年末保有量",
+            "evidence": [
+              {
+                "source_id": "S02",
+                "locator": "二、1—12月新能源汽车段"
+              }
+            ],
+            "absolute_tolerance": 0.05,
+            "required": false
+          },
+          {
+            "id": "F2023_sales",
+            "kind": "reported",
+            "subject": "中国新能源汽车",
+            "metric": "销量",
+            "value": 949.5,
+            "unit": "万辆",
+            "period": "2023年全年",
+            "scope": "中国汽车工业协会年度汽车行业口径；非国内乘用车零售或年末保有量",
+            "evidence": [
+              {
+                "source_id": "S02",
+                "locator": "二、1—12月新能源汽车段"
+              }
+            ],
+            "absolute_tolerance": 0.05,
+            "required": true
+          },
+          {
+            "id": "F2023_sales_yoy",
+            "kind": "reported",
+            "subject": "中国新能源汽车",
+            "metric": "销量同比增速",
+            "value": 37.9,
+            "unit": "%",
+            "period": "2023年全年",
+            "scope": "中国汽车工业协会年度汽车行业口径；非国内乘用车零售或年末保有量",
+            "evidence": [
+              {
+                "source_id": "S02",
+                "locator": "二、1—12月新能源汽车段"
+              }
+            ],
+            "absolute_tolerance": 0.05,
+            "required": true
+          },
+          {
+            "id": "F2023_share",
+            "kind": "reported",
+            "subject": "中国新能源汽车",
+            "metric": "占汽车新车总销量比重",
+            "value": 31.6,
+            "unit": "%",
+            "period": "2023年全年",
+            "scope": "中国汽车工业协会年度汽车行业口径；非国内乘用车零售或年末保有量",
+            "evidence": [
+              {
+                "source_id": "S02",
+                "locator": "二、1—12月新能源汽车段"
+              }
+            ],
+            "absolute_tolerance": 0.05,
+            "required": true
+          },
+          {
+            "id": "F2024_production",
+            "kind": "reported",
+            "subject": "中国新能源汽车",
+            "metric": "产量",
+            "value": 1288.8,
+            "unit": "万辆",
+            "period": "2024年全年",
+            "scope": "中国汽车工业协会年度汽车行业口径；非国内乘用车零售或年末保有量",
+            "evidence": [
+              {
+                "source_id": "S03",
+                "locator": "二、1—12月新能源汽车段"
+              }
+            ],
+            "absolute_tolerance": 0.05,
+            "required": false
+          },
+          {
+            "id": "F2024_sales",
+            "kind": "reported",
+            "subject": "中国新能源汽车",
+            "metric": "销量",
+            "value": 1286.6,
+            "unit": "万辆",
+            "period": "2024年全年",
+            "scope": "中国汽车工业协会年度汽车行业口径；非国内乘用车零售或年末保有量",
+            "evidence": [
+              {
+                "source_id": "S03",
+                "locator": "二、1—12月新能源汽车段"
+              }
+            ],
+            "absolute_tolerance": 0.05,
+            "required": true
+          },
+          {
+            "id": "F2024_sales_yoy",
+            "kind": "reported",
+            "subject": "中国新能源汽车",
+            "metric": "销量同比增速",
+            "value": 35.5,
+            "unit": "%",
+            "period": "2024年全年",
+            "scope": "中国汽车工业协会年度汽车行业口径；非国内乘用车零售或年末保有量",
+            "evidence": [
+              {
+                "source_id": "S03",
+                "locator": "二、1—12月新能源汽车段"
+              }
+            ],
+            "absolute_tolerance": 0.05,
+            "required": true
+          },
+          {
+            "id": "F2024_share",
+            "kind": "reported",
+            "subject": "中国新能源汽车",
+            "metric": "占汽车新车总销量比重",
+            "value": 40.9,
+            "unit": "%",
+            "period": "2024年全年",
+            "scope": "中国汽车工业协会年度汽车行业口径；非国内乘用车零售或年末保有量",
+            "evidence": [
+              {
+                "source_id": "S03",
+                "locator": "二、1—12月新能源汽车段"
+              }
+            ],
+            "absolute_tolerance": 0.05,
+            "required": true
+          },
+          {
+            "id": "F_auto_sales",
+            "kind": "reported",
+            "subject": "中国汽车",
+            "metric": "销量",
+            "value": 3143.6,
+            "unit": "万辆",
+            "period": "2024年全年",
+            "scope": "中汽协汽车总销量",
+            "evidence": [
+              {
+                "source_id": "S03",
+                "locator": "一、1—12月"
+              }
+            ],
+            "absolute_tolerance": 0.05,
+            "required": false
+          },
+          {
+            "id": "F_nev_exports",
+            "kind": "reported",
+            "subject": "中国新能源汽车",
+            "metric": "出口量",
+            "value": 128.4,
+            "unit": "万辆",
+            "period": "2024年全年",
+            "scope": "中汽协新能源汽车出口；非所有汽车出口",
+            "evidence": [
+              {
+                "source_id": "S03",
+                "locator": "三、1—12月"
+              }
+            ],
+            "absolute_tolerance": 0.05,
+            "required": false
+          },
+          {
+            "id": "F_nev_exports_yoy",
+            "kind": "reported",
+            "subject": "中国新能源汽车",
+            "metric": "出口同比增速",
+            "value": 6.7,
+            "unit": "%",
+            "period": "2024年全年",
+            "scope": "中汽协新能源汽车出口",
+            "evidence": [
+              {
+                "source_id": "S03",
+                "locator": "三、1—12月"
+              }
+            ],
+            "absolute_tolerance": 0.05,
+            "required": false
+          },
+          {
+            "id": "F_caam_prod_yoy",
+            "kind": "reported",
+            "subject": "中国新能源汽车",
+            "metric": "产量同比增速",
+            "value": 34.4,
+            "unit": "%",
+            "period": "2024年全年",
+            "scope": "中汽协序列，工信部发布",
+            "evidence": [
+              {
+                "source_id": "S03",
+                "locator": "二、1—12月"
+              }
+            ],
+            "absolute_tolerance": 0.05,
+            "required": false
+          },
+          {
+            "id": "D_sales_cagr",
+            "kind": "derived",
+            "subject": "评测计算",
+            "metric": "2022至2024销量两年复合增速",
+            "value": 36.68055450561445,
+            "unit": "%",
+            "period": "见输入事实",
+            "scope": "按引用的已公布数值计算；并非来源直接公布",
+            "input_fact_ids": [
+              "F2022_sales",
+              "F2024_sales"
+            ],
+            "formula": "(F2024_sales / F2022_sales) ** (1 / 2) * 100 - 100",
+            "absolute_tolerance": 0.05,
+            "required": true
+          },
+          {
+            "id": "D_share_change",
+            "kind": "derived",
+            "subject": "评测计算",
+            "metric": "2022至2024新车占比变化",
+            "value": 15.3,
+            "unit": "个百分点",
+            "period": "见输入事实",
+            "scope": "按引用的已公布数值计算；并非来源直接公布",
+            "input_fact_ids": [
+              "F2022_share",
+              "F2024_share"
+            ],
+            "formula": "F2024_share - F2022_share",
+            "absolute_tolerance": 0.05,
+            "required": true
+          }
+        ],
+        "sources": [
+          {
+            "id": "S01",
+            "title": "2022年12月汽车工业经济运行情况",
+            "publisher": "工业和信息化部（数据来自中国汽车工业协会）",
+            "published_at": "2023-01-12",
+            "url": "https://www.miit.gov.cn/jgsj/zbys/gzdt/art/2023/art_72a940d62c9f4181a9de6b3c0071ece4.html",
+            "accessed_at": "2026-11-09",
+            "verification": "assistant_checked_primary_source",
+            "human_review_status": "pending",
+            "locator": "二、12月新能源汽车销量同比增长51.8%，1—12月段",
+            "short_quote": "新能源汽车新车销量",
+            "summary": "年度产量705.8万辆、销量688.7万辆；销量同比93.4%；全年新车销量占比25.6%。不将12月数据当全年。",
+            "artifact_type": "annotated_source_card_not_full_snapshot"
+          },
+          {
+            "id": "S02",
+            "title": "2023年12月汽车工业经济运行情况",
+            "publisher": "工业和信息化部（数据来自中国汽车工业协会）",
+            "published_at": "2024-01-11",
+            "url": "https://www.miit.gov.cn/jgsj/zbys/gzdt/art/2024/art_c07af594e813497fa3ea0959146010a2.html",
+            "accessed_at": "2026-11-09",
+            "verification": "assistant_checked_primary_source",
+            "human_review_status": "pending",
+            "locator": "二、12月新能源汽车销量同比增长46.4%，1—12月段",
+            "short_quote": "汽车新车总销量的31.6%",
+            "summary": "年度产量958.7万辆、销量949.5万辆；销量同比37.9%；全年新车销量占比31.6%。",
+            "artifact_type": "annotated_source_card_not_full_snapshot"
+          },
+          {
+            "id": "S03",
+            "title": "2024年12月汽车工业经济运行情况",
+            "publisher": "工业和信息化部（数据来自中国汽车工业协会）",
+            "published_at": "2025-01-13",
+            "url": "https://www.miit.gov.cn/gxsj/tjfx/zbgy/qc/art/2025/art_a8895b6aa6d449e2861d027b0d85a2dd.html",
+            "accessed_at": "2026-11-09",
+            "verification": "assistant_checked_primary_source",
+            "human_review_status": "pending",
+            "locator": "一、年度汽车产销；二、年度新能源汽车产销；三、年度出口；文末来源注",
+            "short_quote": "上述数据来自中国汽车工业协会",
+            "summary": "2024全年汽车销量3143.6万辆；新能源汽车产量1288.8万辆、销量1286.6万辆，分别同比34.4%、35.5%；新车销量占比40.9%。全年汽车出口585.9万辆，新能源汽车出口128.4万辆、同比6.7%。",
+            "artifact_type": "annotated_source_card_not_full_snapshot"
+          }
+        ]
+      }
+    },
+    {
+      "id": "pilot_02",
+      "category": "company_comparison",
+      "as_of_date": "2025-03-01",
+      "mode": "open_web",
+      "query": "依据截至2025年3月1日已发布的资料，对比比亚迪与Tesla在2024年的全球年度销售或交付表现。列出比亚迪新能源汽车总销量，以及新能源乘用车中的纯电和插混销量；列出Tesla全球交付总量。再比较比亚迪纯电乘用车销量与Tesla总交付量，计算差额。明确两家公司指标名称和范围，说明为什么不能用比亚迪新能源汽车总量直接断言其纯电车型规模超过Tesla；不要把全球数据写成中国市场数据。",
+      "reference": {
+        "requirements": [
+          {
+            "id": "R1",
+            "text": "比亚迪总量和乘用车动力类型",
+            "fact_ids": [
+              "F_byd_nev",
+              "F_byd_bev",
+              "F_byd_phev"
+            ],
+            "score_2": "三项数值和各自范围正确",
+            "score_1": "一至两项正确，其他遗漏",
+            "score_0": "未回答，或核心内容错误；同时记录事实错误，不能以提到关键词代替完成。"
+          },
+          {
+            "id": "R2",
+            "text": "Tesla全球交付总量",
+            "fact_ids": [
+              "F_tesla_delivery"
+            ],
+            "score_2": "正确标为2024全球交付",
+            "score_1": "数值正确但交付名称或范围不明确",
+            "score_0": "未回答，或核心内容错误；同时记录事实错误，不能以提到关键词代替完成。"
+          },
+          {
+            "id": "R3",
+            "text": "比较更接近的纯电指标",
+            "fact_ids": [
+              "D_bev_gap"
+            ],
+            "score_2": "Tesla总交付比比亚迪纯电乘用车销量多24234辆，并保留各自指标名称",
+            "score_1": "方向正确但未给差额或比较范围说明",
+            "score_0": "未回答，或核心内容错误；同时记录事实错误，不能以提到关键词代替完成。"
+          },
+          {
+            "id": "R4",
+            "text": "解释不能用总NEV当纯电",
+            "fact_ids": [],
+            "score_2": "说明比亚迪总NEV包括插混和商用车，销售与交付口径也不完全相同",
+            "score_1": "只指出包含插混",
+            "score_0": "未回答，或核心内容错误；同时记录事实错误，不能以提到关键词代替完成。"
+          },
+          {
+            "id": "R5",
+            "text": "来源与披露限制",
+            "fact_ids": [],
+            "score_2": "引用两家公司公告，说明比亚迪快报未经审计/可能调整，不把全球当中国",
+            "score_1": "来源可追溯但未交代快报限制",
+            "score_0": "未回答，或核心内容错误；同时记录事实错误，不能以提到关键词代替完成。"
+          }
+        ],
+        "critical_errors": [
+          "将4272145辆全部标成纯电",
+          "将全球数据标成中国市场",
+          "将Tesla产量1773443当交付量",
+          "只比较总NEV与Tesla就断言纯电领先"
+        ],
+        "acceptable_variations": [
+          "可增加乘用车总量4250370与商用车21775说明构成",
+          "允许等价单位；若保留到万位的粗略数值，差额仍需可追溯到原始精确值",
+          "不得据两家公司数据推出整个市场份额；不得称两者口径完全相同"
+        ],
+        "facts": [
+          {
+            "id": "F_byd_nev",
+            "kind": "reported",
+            "subject": "比亚迪",
+            "metric": "新能源汽车销量",
+            "value": 4272145,
+            "unit": "辆",
+            "period": "2024年全年",
+            "scope": "公司全球累计销量，月度快报未经审计",
+            "evidence": [
+              {
+                "source_id": "S04",
+                "locator": "Sales Volume / Year-to-date December 2024，对应项目行"
+              }
+            ],
+            "absolute_tolerance": 0,
+            "required": true
+          },
+          {
+            "id": "F_byd_passenger",
+            "kind": "reported",
+            "subject": "比亚迪",
+            "metric": "新能源乘用车销量",
+            "value": 4250370,
+            "unit": "辆",
+            "period": "2024年全年",
+            "scope": "公司全球累计销量，月度快报未经审计",
+            "evidence": [
+              {
+                "source_id": "S04",
+                "locator": "Sales Volume / Year-to-date December 2024，对应项目行"
+              }
+            ],
+            "absolute_tolerance": 0,
+            "required": false
+          },
+          {
+            "id": "F_byd_bev",
+            "kind": "reported",
+            "subject": "比亚迪",
+            "metric": "纯电动乘用车销量",
+            "value": 1764992,
+            "unit": "辆",
+            "period": "2024年全年",
+            "scope": "公司全球累计销量，月度快报未经审计",
+            "evidence": [
+              {
+                "source_id": "S04",
+                "locator": "Sales Volume / Year-to-date December 2024，对应项目行"
+              }
+            ],
+            "absolute_tolerance": 0,
+            "required": true
+          },
+          {
+            "id": "F_byd_phev",
+            "kind": "reported",
+            "subject": "比亚迪",
+            "metric": "插电式混合动力乘用车销量",
+            "value": 2485378,
+            "unit": "辆",
+            "period": "2024年全年",
+            "scope": "公司全球累计销量，月度快报未经审计",
+            "evidence": [
+              {
+                "source_id": "S04",
+                "locator": "Sales Volume / Year-to-date December 2024，对应项目行"
+              }
+            ],
+            "absolute_tolerance": 0,
+            "required": true
+          },
+          {
+            "id": "F_byd_commercial",
+            "kind": "reported",
+            "subject": "比亚迪",
+            "metric": "新能源商用车销量",
+            "value": 21775,
+            "unit": "辆",
+            "period": "2024年全年",
+            "scope": "公司全球累计销量，月度快报未经审计",
+            "evidence": [
+              {
+                "source_id": "S04",
+                "locator": "Sales Volume / Year-to-date December 2024，对应项目行"
+              }
+            ],
+            "absolute_tolerance": 0,
+            "required": false
+          },
+          {
+            "id": "F_tesla_delivery",
+            "kind": "reported",
+            "subject": "Tesla",
+            "metric": "交付总量",
+            "value": 1789226,
+            "unit": "辆",
+            "period": "2024年全年",
+            "scope": "全球；非中国交付；Model 3/Y为合计",
+            "evidence": [
+              {
+                "source_id": "S05",
+                "locator": "2024年度表格，Deliveries列"
+              }
+            ],
+            "absolute_tolerance": 0,
+            "required": true
+          },
+          {
+            "id": "F_tesla_production",
+            "kind": "reported",
+            "subject": "Tesla",
+            "metric": "产量",
+            "value": 1773443,
+            "unit": "辆",
+            "period": "2024年全年",
+            "scope": "全球；非中国交付；Model 3/Y为合计",
+            "evidence": [
+              {
+                "source_id": "S05",
+                "locator": "2024年度表格，Production列"
+              }
+            ],
+            "absolute_tolerance": 0,
+            "required": false
+          },
+          {
+            "id": "F_tesla_3y",
+            "kind": "reported",
+            "subject": "Tesla",
+            "metric": "Model 3/Y合计交付量",
+            "value": 1704093,
+            "unit": "辆",
+            "period": "2024年全年",
+            "scope": "全球；非中国交付；Model 3/Y为合计",
+            "evidence": [
+              {
+                "source_id": "S05",
+                "locator": "2024年度表格，Deliveries列"
+              }
+            ],
+            "absolute_tolerance": 0,
+            "required": false
+          },
+          {
+            "id": "F_tesla_other",
+            "kind": "reported",
+            "subject": "Tesla",
+            "metric": "Other Models交付量",
+            "value": 85133,
+            "unit": "辆",
+            "period": "2024年全年",
+            "scope": "全球；非中国交付；Model 3/Y为合计",
+            "evidence": [
+              {
+                "source_id": "S05",
+                "locator": "2024年度表格，Deliveries列"
+              }
+            ],
+            "absolute_tolerance": 0,
+            "required": false
+          },
+          {
+            "id": "D_bev_gap",
+            "kind": "derived",
+            "subject": "评测计算",
+            "metric": "Tesla全球总交付减比亚迪纯电乘用车销量",
+            "value": 24234,
+            "unit": "辆",
+            "period": "见输入事实",
+            "scope": "按引用的已公布数值计算；并非来源直接公布",
+            "input_fact_ids": [
+              "F_tesla_delivery",
+              "F_byd_bev"
+            ],
+            "formula": "F_tesla_delivery - F_byd_bev",
+            "absolute_tolerance": 0,
+            "required": true
+          }
+        ],
+        "sources": [
+          {
+            "id": "S04",
+            "title": "Production Volume / Sales Volume — December 2024",
+            "publisher": "BYD Company Limited",
+            "published_at": "2025-01-01",
+            "url": "https://www.bydglobal.com/sites/Satellite/BYD%20PDF%20Viewer?blobcol=urldata&blobheader=application%2Fpdf&blobkey=id&blobtable=MungoBlobs&blobwhere=1638928484684&ssbinary=true",
+            "accessed_at": "2026-11-09",
+            "verification": "assistant_checked_primary_source",
+            "human_review_status": "pending",
+            "locator": "PDF印刷第1页：Sales Volume / Year-to-date December 2024列；第2页：Note",
+            "short_quote": "unaudited figures",
+            "summary": "2024累计销量：新能源汽车4272145辆；乘用车4250370辆，其中纯电1764992辆、插混2485378辆；商用车21775辆。公告注明产销数字未经审计，可能调整；必须区分产量列与销量列。",
+            "artifact_type": "annotated_source_card_not_full_snapshot"
+          },
+          {
+            "id": "S05",
+            "title": "Tesla Fourth Quarter 2024 Production, Deliveries & Deployments",
+            "publisher": "Tesla Investor Relations",
+            "published_at": "2025-01-02",
+            "url": "https://ir.tesla.com/press-release/tesla-fourth-quarter-2024-production-deliveries-and-deployments",
+            "accessed_at": "2026-11-09",
+            "verification": "assistant_checked_primary_source",
+            "human_review_status": "pending",
+            "locator": "2024年度表格：Production和Deliveries列（不是Q4表）",
+            "short_quote": "Model 3/Y",
+            "summary": "2024全球交付总量1789226辆、产量1773443辆。Model 3/Y合计交付1704093辆，Other Models交付85133辆。年度表未拆分Model 3与Model Y，未列中国市场交付或中国分车型收入。不能把这一公告的信息边界扩大为全网未披露。",
+            "artifact_type": "annotated_source_card_not_full_snapshot"
+          }
+        ]
+      }
+    },
+    {
+      "id": "pilot_03",
+      "category": "multi_section",
+      "as_of_date": "2025-03-01",
+      "mode": "open_web",
+      "query": "请基于截至2025年3月1日已发布的资料，撰写2024年中国新能源汽车行业简报，依次覆盖四个部分：一、年度产销及各自同比变化；二、新能源汽车占汽车新车总销量的比重及其含义；三、新能源汽车年度出口量和同比变化；四、截至年末充电设施总数、同比变化及高速公路服务区充电桩数量和覆盖率。汽车数据采用中汽协口径，充电数据采用国家能源局口径。每部分提供来源，最后给出两条基于证据的判断并说明推断边界，不能只根据设施总数断言充电问题已经解决。",
+      "reference": {
+        "requirements": [
+          {
+            "id": "R1",
+            "text": "产销及同比",
+            "fact_ids": [
+              "F2024_production",
+              "F_caam_prod_yoy",
+              "F2024_sales",
+              "F2024_sales_yoy"
+            ],
+            "score_2": "四项正确，不混产销",
+            "score_1": "部分指标遗漏，其余正确",
+            "score_0": "未回答，或核心内容错误；同时记录事实错误，不能以提到关键词代替完成。"
+          },
+          {
+            "id": "R2",
+            "text": "新车销量占比含义",
+            "fact_ids": [
+              "F2024_share"
+            ],
+            "score_2": "40.9%，解释为新车销量占比而非存量占比",
+            "score_1": "比例正确但未解释分母",
+            "score_0": "未回答，或核心内容错误；同时记录事实错误，不能以提到关键词代替完成。"
+          },
+          {
+            "id": "R3",
+            "text": "新能源出口",
+            "fact_ids": [
+              "F_nev_exports",
+              "F_nev_exports_yoy"
+            ],
+            "score_2": "128.4万辆、6.7%，不混全部汽车出口",
+            "score_1": "只给其中一项",
+            "score_0": "未回答，或核心内容错误；同时记录事实错误，不能以提到关键词代替完成。"
+          },
+          {
+            "id": "R4",
+            "text": "最后一节基础设施",
+            "fact_ids": [
+              "F_chargers",
+              "F_chargers_yoy",
+              "F_highway_chargers",
+              "F_highway_coverage"
+            ],
+            "score_2": "四项完整，说明时间和设施范围",
+            "score_1": "部分指标正确但有遗漏",
+            "score_0": "未回答，或核心内容错误；同时记录事实错误，不能以提到关键词代替完成。"
+          },
+          {
+            "id": "R5",
+            "text": "证据支撑的判断与限制",
+            "fact_ids": [],
+            "score_2": "至少两条判断有对应证据，明确数量/覆盖不等于服务充分或无排队，各节有引用",
+            "score_1": "有合理判断但证据映射或限制不足",
+            "score_0": "未回答，或核心内容错误；同时记录事实错误，不能以提到关键词代替完成。"
+          }
+        ],
+        "critical_errors": [
+          "把总充电设施1281.8万台称为公共桩数量",
+          "把40.9%当新能源汽车保有量占比",
+          "用全部汽车出口585.9万辆当新能源出口",
+          "以98%覆盖率断言所有服务区均能正常充电或没有排队"
+        ],
+        "acceptable_variations": [
+          "可合并标题但四方面必须覆盖",
+          "分析无唯一标准结论，必须有证据并区分推断"
+        ],
+        "facts": [
+          {
+            "id": "F2024_production",
+            "kind": "reported",
+            "subject": "中国新能源汽车",
+            "metric": "产量",
+            "value": 1288.8,
+            "unit": "万辆",
+            "period": "2024年全年",
+            "scope": "中国汽车工业协会年度汽车行业口径；非国内乘用车零售或年末保有量",
+            "evidence": [
+              {
+                "source_id": "S03",
+                "locator": "二、1—12月新能源汽车段"
+              }
+            ],
+            "absolute_tolerance": 0.05,
+            "required": true
+          },
+          {
+            "id": "F2024_sales",
+            "kind": "reported",
+            "subject": "中国新能源汽车",
+            "metric": "销量",
+            "value": 1286.6,
+            "unit": "万辆",
+            "period": "2024年全年",
+            "scope": "中国汽车工业协会年度汽车行业口径；非国内乘用车零售或年末保有量",
+            "evidence": [
+              {
+                "source_id": "S03",
+                "locator": "二、1—12月新能源汽车段"
+              }
+            ],
+            "absolute_tolerance": 0.05,
+            "required": true
+          },
+          {
+            "id": "F2024_sales_yoy",
+            "kind": "reported",
+            "subject": "中国新能源汽车",
+            "metric": "销量同比增速",
+            "value": 35.5,
+            "unit": "%",
+            "period": "2024年全年",
+            "scope": "中国汽车工业协会年度汽车行业口径；非国内乘用车零售或年末保有量",
+            "evidence": [
+              {
+                "source_id": "S03",
+                "locator": "二、1—12月新能源汽车段"
+              }
+            ],
+            "absolute_tolerance": 0.05,
+            "required": true
+          },
+          {
+            "id": "F2024_share",
+            "kind": "reported",
+            "subject": "中国新能源汽车",
+            "metric": "占汽车新车总销量比重",
+            "value": 40.9,
+            "unit": "%",
+            "period": "2024年全年",
+            "scope": "中国汽车工业协会年度汽车行业口径；非国内乘用车零售或年末保有量",
+            "evidence": [
+              {
+                "source_id": "S03",
+                "locator": "二、1—12月新能源汽车段"
+              }
+            ],
+            "absolute_tolerance": 0.05,
+            "required": true
+          },
+          {
+            "id": "F_auto_sales",
+            "kind": "reported",
+            "subject": "中国汽车",
+            "metric": "销量",
+            "value": 3143.6,
+            "unit": "万辆",
+            "period": "2024年全年",
+            "scope": "中汽协汽车总销量",
+            "evidence": [
+              {
+                "source_id": "S03",
+                "locator": "一、1—12月"
+              }
+            ],
+            "absolute_tolerance": 0.05,
+            "required": false
+          },
+          {
+            "id": "F_nev_exports",
+            "kind": "reported",
+            "subject": "中国新能源汽车",
+            "metric": "出口量",
+            "value": 128.4,
+            "unit": "万辆",
+            "period": "2024年全年",
+            "scope": "中汽协新能源汽车出口；非所有汽车出口",
+            "evidence": [
+              {
+                "source_id": "S03",
+                "locator": "三、1—12月"
+              }
+            ],
+            "absolute_tolerance": 0.05,
+            "required": true
+          },
+          {
+            "id": "F_nev_exports_yoy",
+            "kind": "reported",
+            "subject": "中国新能源汽车",
+            "metric": "出口同比增速",
+            "value": 6.7,
+            "unit": "%",
+            "period": "2024年全年",
+            "scope": "中汽协新能源汽车出口",
+            "evidence": [
+              {
+                "source_id": "S03",
+                "locator": "三、1—12月"
+              }
+            ],
+            "absolute_tolerance": 0.05,
+            "required": true
+          },
+          {
+            "id": "F_caam_prod_yoy",
+            "kind": "reported",
+            "subject": "中国新能源汽车",
+            "metric": "产量同比增速",
+            "value": 34.4,
+            "unit": "%",
+            "period": "2024年全年",
+            "scope": "中汽协序列，工信部发布",
+            "evidence": [
+              {
+                "source_id": "S03",
+                "locator": "二、1—12月"
+              }
+            ],
+            "absolute_tolerance": 0.05,
+            "required": true
+          },
+          {
+            "id": "F_chargers",
+            "kind": "reported",
+            "subject": "中国充电设施",
+            "metric": "总数",
+            "value": 1281.8,
+            "unit": "万台",
+            "period": "截至2024年底",
+            "scope": "国家能源局充电设施总数，不能改标公共桩",
+            "evidence": [
+              {
+                "source_id": "S07",
+                "locator": "二是充电保障能力进一步增强"
+              }
+            ],
+            "absolute_tolerance": 0.05,
+            "required": true
+          },
+          {
+            "id": "F_chargers_yoy",
+            "kind": "reported",
+            "subject": "中国充电设施",
+            "metric": "总数同比增速",
+            "value": 49,
+            "unit": "%",
+            "period": "截至2024年底",
+            "scope": "国家能源局全国总数",
+            "evidence": [
+              {
+                "source_id": "S07",
+                "locator": "二是充电保障能力进一步增强"
+              }
+            ],
+            "absolute_tolerance": 0.05,
+            "required": true
+          },
+          {
+            "id": "F_highway_chargers",
+            "kind": "reported",
+            "subject": "高速公路服务区充电桩",
+            "metric": "累计数量",
+            "value": 3.5,
+            "unit": "万台",
+            "period": "截至2024年底",
+            "scope": "高速公路服务区",
+            "evidence": [
+              {
+                "source_id": "S07",
+                "locator": "二是充电保障能力进一步增强"
+              }
+            ],
+            "absolute_tolerance": 0.05,
+            "required": true
+          },
+          {
+            "id": "F_highway_coverage",
+            "kind": "reported",
+            "subject": "高速公路服务区",
+            "metric": "充电桩覆盖率",
+            "value": 98,
+            "unit": "%",
+            "period": "截至2024年底",
+            "scope": "服务区覆盖率，不是充电设施完好率",
+            "evidence": [
+              {
+                "source_id": "S07",
+                "locator": "二是充电保障能力进一步增强"
+              }
+            ],
+            "absolute_tolerance": 0.05,
+            "required": true
+          }
+        ],
+        "sources": [
+          {
+            "id": "S03",
+            "title": "2024年12月汽车工业经济运行情况",
+            "publisher": "工业和信息化部（数据来自中国汽车工业协会）",
+            "published_at": "2025-01-13",
+            "url": "https://www.miit.gov.cn/gxsj/tjfx/zbgy/qc/art/2025/art_a8895b6aa6d449e2861d027b0d85a2dd.html",
+            "accessed_at": "2026-11-09",
+            "verification": "assistant_checked_primary_source",
+            "human_review_status": "pending",
+            "locator": "一、年度汽车产销；二、年度新能源汽车产销；三、年度出口；文末来源注",
+            "short_quote": "上述数据来自中国汽车工业协会",
+            "summary": "2024全年汽车销量3143.6万辆；新能源汽车产量1288.8万辆、销量1286.6万辆，分别同比34.4%、35.5%；新车销量占比40.9%。全年汽车出口585.9万辆，新能源汽车出口128.4万辆、同比6.7%。",
+            "artifact_type": "annotated_source_card_not_full_snapshot"
+          },
+          {
+            "id": "S07",
+            "title": "张星：持续推动充电设施高质量发展",
+            "publisher": "国家能源局",
+            "published_at": "2025-01-23",
+            "url": "https://www.nea.gov.cn/20250123/5764822c1e4b4ccab80aad9298887bc1/c.html",
+            "accessed_at": "2026-11-09",
+            "verification": "assistant_checked_primary_source",
+            "human_review_status": "pending",
+            "locator": "答记者问，二是充电保障能力进一步增强",
+            "short_quote": "充电设施总数达到1281.8万台",
+            "summary": "截至2024年底充电设施总数1281.8万台、同比49%；高速公路服务区累计建成充电桩3.5万台，覆盖率98%。总量不等于公共桩数量，服务区覆盖率不等于每个地点均无排队或设施全部可用。",
+            "artifact_type": "annotated_source_card_not_full_snapshot"
+          }
+        ]
+      }
+    },
+    {
+      "id": "pilot_04",
+      "category": "source_discrepancy",
+      "as_of_date": "2025-03-01",
+      "mode": "open_web",
+      "query": "请核对国家统计局《中华人民共和国2024年国民经济和社会发展统计公报》与工信部《2024年12月汽车工业经济运行情况》中的2024年新能源汽车产量和同比增速。分别列出数值、发布主体、实际数据来源和发布时间，计算产量差额。判断是否可直接合并为同一统计序列；区分资料明确说明的口径信息与尚待核实的差异原因。不强行判定某个来源错误，不把可能原因写成已证实事实。仅使用截至2025年3月1日发布的资料。",
+      "reference": {
+        "requirements": [
+          {
+            "id": "R1",
+            "text": "分别列两组产量及同比",
+            "fact_ids": [
+              "F_nbs_production",
+              "F_nbs_yoy",
+              "F2024_production",
+              "F_caam_prod_yoy"
+            ],
+            "score_2": "四项全部正确且来源分开",
+            "score_1": "只完整列出一组或漏增速",
+            "score_0": "未回答，或核心内容错误；同时记录事实错误，不能以提到关键词代替完成。"
+          },
+          {
+            "id": "R2",
+            "text": "区分发布与数据来源",
+            "fact_ids": [],
+            "score_2": "国家统计局公报2025-02-28；工信部2025-01-13发布，明确引用中汽协",
+            "score_1": "来源正确但缺日期或混淆发布者与统计来源",
+            "score_0": "未回答，或核心内容错误；同时记录事实错误，不能以提到关键词代替完成。"
+          },
+          {
+            "id": "R3",
+            "text": "计算差额",
+            "fact_ids": [
+              "D_production_gap"
+            ],
+            "score_2": "国家统计局数高28.0万辆，不能称差额为销量差",
+            "score_1": "方向正确但未算差额",
+            "score_0": "未回答，或核心内容错误；同时记录事实错误，不能以提到关键词代替完成。"
+          },
+          {
+            "id": "R4",
+            "text": "证据边界",
+            "fact_ids": [],
+            "score_2": "承认已查两页未提供差额逐项解释，可能原因标为待核实；引用一般注释不等于证明本差额原因",
+            "score_1": "表达谨慎但未清楚说明证据缺口",
+            "score_0": "未回答，或核心内容错误；同时记录事实错误，不能以提到关键词代替完成。"
+          },
+          {
+            "id": "R5",
+            "text": "后续使用方法",
+            "fact_ids": [],
+            "score_2": "分别标注序列，不平均、不任意选错；提出核对统计对象、范围、时间、修订口径等步骤",
+            "score_1": "提出保留两套来源但未给核验步骤",
+            "score_0": "未回答，或核心内容错误；同时记录事实错误，不能以提到关键词代替完成。"
+          }
+        ],
+        "critical_errors": [
+          "把产量与销量的差别当作这两组产量差额的已证实原因",
+          "声称28万辆全部来自某类企业而无直接证据",
+          "直接平均两个来源得出唯一正确产量",
+          "无证据宣布官方某数错误"
+        ],
+        "acceptable_variations": [
+          "不要求证明具体差异成因；谨慎保留不确定性可得满分",
+          "若找到截至截止日已发布的直接口径说明，可据此完善解释；评审需保存新证据后再判定，不能仅因未列入题库而扣分"
+        ],
+        "facts": [
+          {
+            "id": "F2024_production",
+            "kind": "reported",
+            "subject": "中国新能源汽车",
+            "metric": "产量",
+            "value": 1288.8,
+            "unit": "万辆",
+            "period": "2024年全年",
+            "scope": "中国汽车工业协会年度汽车行业口径；非国内乘用车零售或年末保有量",
+            "evidence": [
+              {
+                "source_id": "S03",
+                "locator": "二、1—12月新能源汽车段"
+              }
+            ],
+            "absolute_tolerance": 0.05,
+            "required": true
+          },
+          {
+            "id": "F2024_sales",
+            "kind": "reported",
+            "subject": "中国新能源汽车",
+            "metric": "销量",
+            "value": 1286.6,
+            "unit": "万辆",
+            "period": "2024年全年",
+            "scope": "中国汽车工业协会年度汽车行业口径；非国内乘用车零售或年末保有量",
+            "evidence": [
+              {
+                "source_id": "S03",
+                "locator": "二、1—12月新能源汽车段"
+              }
+            ],
+            "absolute_tolerance": 0.05,
+            "required": false
+          },
+          {
+            "id": "F2024_sales_yoy",
+            "kind": "reported",
+            "subject": "中国新能源汽车",
+            "metric": "销量同比增速",
+            "value": 35.5,
+            "unit": "%",
+            "period": "2024年全年",
+            "scope": "中国汽车工业协会年度汽车行业口径；非国内乘用车零售或年末保有量",
+            "evidence": [
+              {
+                "source_id": "S03",
+                "locator": "二、1—12月新能源汽车段"
+              }
+            ],
+            "absolute_tolerance": 0.05,
+            "required": false
+          },
+          {
+            "id": "F2024_share",
+            "kind": "reported",
+            "subject": "中国新能源汽车",
+            "metric": "占汽车新车总销量比重",
+            "value": 40.9,
+            "unit": "%",
+            "period": "2024年全年",
+            "scope": "中国汽车工业协会年度汽车行业口径；非国内乘用车零售或年末保有量",
+            "evidence": [
+              {
+                "source_id": "S03",
+                "locator": "二、1—12月新能源汽车段"
+              }
+            ],
+            "absolute_tolerance": 0.05,
+            "required": false
+          },
+          {
+            "id": "F_auto_sales",
+            "kind": "reported",
+            "subject": "中国汽车",
+            "metric": "销量",
+            "value": 3143.6,
+            "unit": "万辆",
+            "period": "2024年全年",
+            "scope": "中汽协汽车总销量",
+            "evidence": [
+              {
+                "source_id": "S03",
+                "locator": "一、1—12月"
+              }
+            ],
+            "absolute_tolerance": 0.05,
+            "required": false
+          },
+          {
+            "id": "F_nev_exports",
+            "kind": "reported",
+            "subject": "中国新能源汽车",
+            "metric": "出口量",
+            "value": 128.4,
+            "unit": "万辆",
+            "period": "2024年全年",
+            "scope": "中汽协新能源汽车出口；非所有汽车出口",
+            "evidence": [
+              {
+                "source_id": "S03",
+                "locator": "三、1—12月"
+              }
+            ],
+            "absolute_tolerance": 0.05,
+            "required": false
+          },
+          {
+            "id": "F_nev_exports_yoy",
+            "kind": "reported",
+            "subject": "中国新能源汽车",
+            "metric": "出口同比增速",
+            "value": 6.7,
+            "unit": "%",
+            "period": "2024年全年",
+            "scope": "中汽协新能源汽车出口",
+            "evidence": [
+              {
+                "source_id": "S03",
+                "locator": "三、1—12月"
+              }
+            ],
+            "absolute_tolerance": 0.05,
+            "required": false
+          },
+          {
+            "id": "F_nbs_production",
+            "kind": "reported",
+            "subject": "中国新能源汽车",
+            "metric": "产量",
+            "value": 1316.8,
+            "unit": "万辆",
+            "period": "2024年全年",
+            "scope": "国家统计局2024统计公报公布序列，初步统计数",
+            "evidence": [
+              {
+                "source_id": "S06",
+                "locator": "一、综合：新质生产力段"
+              }
+            ],
+            "absolute_tolerance": 0.05,
+            "required": true
+          },
+          {
+            "id": "F_nbs_yoy",
+            "kind": "reported",
+            "subject": "中国新能源汽车",
+            "metric": "产量同比增速",
+            "value": 38.7,
+            "unit": "%",
+            "period": "2024年全年",
+            "scope": "国家统计局公报同比口径",
+            "evidence": [
+              {
+                "source_id": "S06",
+                "locator": "一、综合：新质生产力段"
+              }
+            ],
+            "absolute_tolerance": 0.05,
+            "required": true
+          },
+          {
+            "id": "F_caam_prod_yoy",
+            "kind": "reported",
+            "subject": "中国新能源汽车",
+            "metric": "产量同比增速",
+            "value": 34.4,
+            "unit": "%",
+            "period": "2024年全年",
+            "scope": "中汽协序列，工信部发布",
+            "evidence": [
+              {
+                "source_id": "S03",
+                "locator": "二、1—12月"
+              }
+            ],
+            "absolute_tolerance": 0.05,
+            "required": true
+          },
+          {
+            "id": "D_production_gap",
+            "kind": "derived",
+            "subject": "评测计算",
+            "metric": "国家统计局产量减中汽协产量",
+            "value": 28,
+            "unit": "万辆",
+            "period": "见输入事实",
+            "scope": "按引用的已公布数值计算；并非来源直接公布",
+            "input_fact_ids": [
+              "F_nbs_production",
+              "F2024_production"
+            ],
+            "formula": "F_nbs_production - F2024_production",
+            "absolute_tolerance": 0.05,
+            "required": true
+          }
+        ],
+        "sources": [
+          {
+            "id": "S03",
+            "title": "2024年12月汽车工业经济运行情况",
+            "publisher": "工业和信息化部（数据来自中国汽车工业协会）",
+            "published_at": "2025-01-13",
+            "url": "https://www.miit.gov.cn/gxsj/tjfx/zbgy/qc/art/2025/art_a8895b6aa6d449e2861d027b0d85a2dd.html",
+            "accessed_at": "2026-11-09",
+            "verification": "assistant_checked_primary_source",
+            "human_review_status": "pending",
+            "locator": "一、年度汽车产销；二、年度新能源汽车产销；三、年度出口；文末来源注",
+            "short_quote": "上述数据来自中国汽车工业协会",
+            "summary": "2024全年汽车销量3143.6万辆；新能源汽车产量1288.8万辆、销量1286.6万辆，分别同比34.4%、35.5%；新车销量占比40.9%。全年汽车出口585.9万辆，新能源汽车出口128.4万辆、同比6.7%。",
+            "artifact_type": "annotated_source_card_not_full_snapshot"
+          },
+          {
+            "id": "S06",
+            "title": "中华人民共和国2024年国民经济和社会发展统计公报",
+            "publisher": "国家统计局",
+            "published_at": "2025-02-28",
+            "url": "https://www.stats.gov.cn/zwfwck/sjfb/202502/t20250228_1958817.html",
+            "accessed_at": "2026-11-09",
+            "verification": "assistant_checked_primary_source",
+            "human_review_status": "pending",
+            "locator": "一、综合：新质生产力段；文末注释[1]和[11]",
+            "short_quote": "新能源汽车产量1316.8万辆",
+            "summary": "公报列2024新能源汽车产量1316.8万辆、同比38.7%；注[1]称数据为初步统计数；注[11]解释规模以上工业相关指标增速按可比口径计算。该页未逐项解释其与中汽协产量差额的来源，不可据一般注释断言28万辆差额的具体原因。",
+            "artifact_type": "annotated_source_card_not_full_snapshot"
+          }
+        ]
+      }
+    },
+    {
+      "id": "pilot_05",
+      "category": "bounded_insufficient_evidence",
+      "as_of_date": "2025-01-02",
+      "mode": "provided_material_only",
+      "query": "仅依据下方提供的Tesla官方公告年度表格摘录，报告2024年中国市场Model 3和Model Y各自的全年交付量、中国市场交付总量及两款车型各自在中国的全年收入。无法确定的项目请逐项标注并说明缺少什么信息，不得自行估算，也不得使用外部资料补齐。另列出这份材料确实能确认的2024年全球年度交付数据。注意区分生产与交付、单车型与合并车型。",
+      "materials": [
+        {
+          "id": "M05",
+          "source_id": "S05",
+          "title": "Tesla Fourth Quarter 2024 Production, Deliveries & Deployments",
+          "url": "https://ir.tesla.com/press-release/tesla-fourth-quarter-2024-production-deliveries-and-deployments",
+          "published_at": "2025-01-02",
+          "locator": "2024年度表格；以下为中文转写，不是全文",
+          "content": "单位：辆；范围：全球；期间：2024全年。\n车型组 | 产量 | 交付量\nModel 3/Y合计 | 1679338 | 1704093\n其他车型合计 | 94105 | 85133\n总计 | 1773443 | 1789226"
+        }
+      ],
+      "reference": {
+        "requirements": [
+          {
+            "id": "R1",
+            "text": "中国分车型交付",
+            "fact_ids": [],
+            "score_2": "分别标注中国Model 3和Model Y交付无法从材料确定，说明同时缺地区和单车型拆分",
+            "score_1": "只笼统说资料不足",
+            "score_0": "未回答，或核心内容错误；同时记录事实错误，不能以提到关键词代替完成。"
+          },
+          {
+            "id": "R2",
+            "text": "中国总交付",
+            "fact_ids": [],
+            "score_2": "标为无法确定，说明全球总量不能等于中国总量",
+            "score_1": "标为未知但不说明原因",
+            "score_0": "未回答，或核心内容错误；同时记录事实错误，不能以提到关键词代替完成。"
+          },
+          {
+            "id": "R3",
+            "text": "中国分车型收入",
+            "fact_ids": [],
+            "score_2": "两款均无法确定，缺收入/价格/地区车型数据，交付量不可代替收入",
+            "score_1": "只说明收入缺失，未区分两款",
+            "score_0": "未回答，或核心内容错误；同时记录事实错误，不能以提到关键词代替完成。"
+          },
+          {
+            "id": "R4",
+            "text": "确认可知的全球交付",
+            "fact_ids": [
+              "F_tesla_delivery",
+              "F_tesla_3y",
+              "F_tesla_other"
+            ],
+            "score_2": "三个年度全球交付数正确，Model 3/Y保留合计",
+            "score_1": "部分正确但有遗漏",
+            "score_0": "未回答，或核心内容错误；同时记录事实错误，不能以提到关键词代替完成。"
+          },
+          {
+            "id": "R5",
+            "text": "遵守材料边界",
+            "fact_ids": [],
+            "score_2": "不外查补值、不估算；列出完成任务所需补充资料；不声称全网均未披露",
+            "score_1": "不编造，但未说明补充资料",
+            "score_0": "未回答，或核心内容错误；同时记录事实错误，不能以提到关键词代替完成。"
+          }
+        ],
+        "critical_errors": [
+          "把1704093全部当作单一车型或中国交付",
+          "将1773443产量当作交付量",
+          "对缺失项目输出无依据精确数字或0",
+          "通过外部资料补值违反仅依据给定材料要求"
+        ],
+        "acceptable_variations": [
+          "未知可用null、N/A、未披露于给定材料或无法确定表述",
+          "拒绝全部作答不得满分，仍须提取材料中已知部分",
+          "此题结论仅限给定材料，不判断整个互联网是否存在这些数据"
+        ],
+        "unanswerable_targets": [
+          {
+            "id": "U1",
+            "field": "2024中国Model 3交付",
+            "expected": null
+          },
+          {
+            "id": "U2",
+            "field": "2024中国Model Y交付",
+            "expected": null
+          },
+          {
+            "id": "U3",
+            "field": "2024中国交付总量",
+            "expected": null
+          },
+          {
+            "id": "U4",
+            "field": "2024中国Model 3收入",
+            "expected": null
+          },
+          {
+            "id": "U5",
+            "field": "2024中国Model Y收入",
+            "expected": null
+          }
+        ],
+        "facts": [
+          {
+            "id": "F_tesla_delivery",
+            "kind": "reported",
+            "subject": "Tesla",
+            "metric": "交付总量",
+            "value": 1789226,
+            "unit": "辆",
+            "period": "2024年全年",
+            "scope": "全球；非中国交付；Model 3/Y为合计",
+            "evidence": [
+              {
+                "source_id": "S05",
+                "locator": "2024年度表格，Deliveries列"
+              }
+            ],
+            "absolute_tolerance": 0,
+            "required": true
+          },
+          {
+            "id": "F_tesla_production",
+            "kind": "reported",
+            "subject": "Tesla",
+            "metric": "产量",
+            "value": 1773443,
+            "unit": "辆",
+            "period": "2024年全年",
+            "scope": "全球；非中国交付；Model 3/Y为合计",
+            "evidence": [
+              {
+                "source_id": "S05",
+                "locator": "2024年度表格，Production列"
+              }
+            ],
+            "absolute_tolerance": 0,
+            "required": false
+          },
+          {
+            "id": "F_tesla_3y",
+            "kind": "reported",
+            "subject": "Tesla",
+            "metric": "Model 3/Y合计交付量",
+            "value": 1704093,
+            "unit": "辆",
+            "period": "2024年全年",
+            "scope": "全球；非中国交付；Model 3/Y为合计",
+            "evidence": [
+              {
+                "source_id": "S05",
+                "locator": "2024年度表格，Deliveries列"
+              }
+            ],
+            "absolute_tolerance": 0,
+            "required": true
+          },
+          {
+            "id": "F_tesla_other",
+            "kind": "reported",
+            "subject": "Tesla",
+            "metric": "Other Models交付量",
+            "value": 85133,
+            "unit": "辆",
+            "period": "2024年全年",
+            "scope": "全球；非中国交付；Model 3/Y为合计",
+            "evidence": [
+              {
+                "source_id": "S05",
+                "locator": "2024年度表格，Deliveries列"
+              }
+            ],
+            "absolute_tolerance": 0,
+            "required": true
+          }
+        ],
+        "sources": [
+          {
+            "id": "S05",
+            "title": "Tesla Fourth Quarter 2024 Production, Deliveries & Deployments",
+            "publisher": "Tesla Investor Relations",
+            "published_at": "2025-01-02",
+            "url": "https://ir.tesla.com/press-release/tesla-fourth-quarter-2024-production-deliveries-and-deployments",
+            "accessed_at": "2026-11-09",
+            "verification": "assistant_checked_primary_source",
+            "human_review_status": "pending",
+            "locator": "2024年度表格：Production和Deliveries列（不是Q4表）",
+            "short_quote": "Model 3/Y",
+            "summary": "2024全球交付总量1789226辆、产量1773443辆。Model 3/Y合计交付1704093辆，Other Models交付85133辆。年度表未拆分Model 3与Model Y，未列中国市场交付或中国分车型收入。不能把这一公告的信息边界扩大为全网未披露。",
+            "artifact_type": "annotated_source_card_not_full_snapshot"
+          }
+        ]
+      }
+    }
+  ]
+}

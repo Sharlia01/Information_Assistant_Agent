@@ -326,7 +326,7 @@ class DataAnalyst(BaseAgent):
 
         # 收集搜索结果
         search_results_text = []
-        for fact in state.get("facts", [])[:20]:
+        for fact in state.get("facts", [])[:20]:  # 只取前20条事实进行数据提取
             search_results_text.append(f"- {fact.get('content', '')} (来源: {fact.get('source_name', '未知')})")
 
         if not search_results_text:
@@ -350,7 +350,7 @@ class DataAnalyst(BaseAgent):
         # 更新数据点到状态
         if result.get("data_points"):
             for dp in result["data_points"]:
-                state["data_points"].append(dp)
+                state["data_points"].append(dp)  # 没有去重，识别到的数据点直接追加到状态
 
         # 更新洞察
         if result.get("insights"):

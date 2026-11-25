@@ -444,6 +444,8 @@ class DeepResearchGraph:
                 await task
             except Exception as e:
                 logger.error(f"Agent {agent.name} error: {e}")
+                # 交给外层统一标记失败并终止流程，避免继续使用不完整状态。
+                raise
 
             # 清空剩余的消息
             remaining = 0
@@ -601,8 +603,8 @@ class DeepResearchGraph:
                 "type": "researching",
                 "status": "completed",
                 "stats": {
-                    "facts": len(state.get("facts", [])),
-                    "sources": len(state.get("references", []))
+                    "facts": len(state.get("facts", [])), # 目前收集了多少条事实
+                    "sources": len(state.get("references", [])) # 目前收集了多少条引用
                 }
             })
             if cp_event:
@@ -687,6 +689,20 @@ class DeepResearchGraph:
                 else:
                     break
 
+            # 完成表示流程结束；只有 critic 明确通过才表示审核通过。
+            review_passed = state.get("review_passed", False)
+            if review_passed:
+                completion_reason = "review_passed"
+            elif state["iteration"] >= state["max_iterations"]:
+                completion_reason = "max_iterations"
+                yield {
+                    "type": "warning",
+                    "content": "已达到最大迭代次数，报告尚未通过审核；最后一次修订未再次审核，评分和问题数来自最近一次审核。",
+                    "unresolved_issues": state.get("unresolved_issues", 0),
+                }
+            else:
+                completion_reason = "review_incomplete"
+
             # 完成
             logger.info(f"[Graph] ========== 研究完成 ==========")
             logger.info(f"[Graph] 最终统计: facts={len(state.get('facts', []))}, charts={len(state.get('charts', []))}, iterations={state.get('iteration', 0)}")
@@ -723,6 +739,10 @@ class DeepResearchGraph:
 
             yield {
                 "type": "research_complete",
+                "completion_reason": completion_reason,
+                "review_passed": review_passed,
+                # 最近一次审核发现的严重问题数，修订后未复核不视为已解决。
+                "unresolved_issues": state.get("unresolved_issues", 0),
                 "final_report": state.get("final_report", ""),
                 "quality_score": state.get("quality_score", 0.0),
                 "facts_count": len(state.get("facts", [])),

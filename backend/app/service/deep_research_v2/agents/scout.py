@@ -642,7 +642,7 @@ URL: {url}
         analysis = await self._analyze_search_results(
             state["query"],
             section,
-            all_results,
+            all_results, # 当前section汇集的搜索结果，函数实际取前15条
             hypotheses=state.get("hypotheses", [])
         )
 
@@ -676,7 +676,7 @@ URL: {url}
                 state["facts"].append(fact_entry)
                 added_facts += 1
 
-                # 提取数据点
+                # 从提取的事实中提取数据点
                 for dp in fact.get("data_points", []):
                     data_point = {
                         "id": f"dp_{uuid.uuid4().hex[:8]}",

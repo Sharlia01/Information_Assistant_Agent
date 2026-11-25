@@ -47,7 +47,7 @@ class CriticMaster(BaseAgent):
 
 ## 待审核内容
 
-### 章节草稿
+### 报告正文
 {draft_content}
 
 ### 引用的事实
@@ -163,6 +163,7 @@ class CriticMaster(BaseAgent):
         })
 
         # 执行审核
+        state["review_passed"] = False
         self.logger.info(f"[CriticMaster] 开始调用 _review_content...")
         review_result = await self._review_content(state)
         self.logger.info(f"[CriticMaster] 审核完成，结果: {bool(review_result)}")
@@ -205,6 +206,7 @@ class CriticMaster(BaseAgent):
             verdict = review_result.get("overall_assessment", {}).get("verdict", "needs_revision")
 
             if verdict == "pass":
+                state["review_passed"] = True
                 state["phase"] = ResearchPhase.COMPLETED.value
             elif state["iteration"] >= state["max_iterations"]:
                 # 达到最大迭代次数，强制完成
@@ -285,14 +287,14 @@ class CriticMaster(BaseAgent):
         """审核内容"""
         self.logger.info(f"[CriticMaster] _review_content 开始")
 
-        # 准备草稿内容
-        draft_content = ""
-        for section_id, content in state["draft_sections"].items():
-            section = next((s for s in state["outline"] if s.get("id") == section_id), {})
-            draft_content += f"\n## {section.get('title', section_id)}\n{content}\n"
-
-        if not draft_content:
-            draft_content = state.get("final_report", "（暂无内容）")
+        # 优先审核整合、修订后的最新报告；尚未生成报告时才使用章节草稿。
+        draft_content = state.get("final_report") or ""
+        if not draft_content.strip():
+            draft_content = ""
+            for section_id, content in state["draft_sections"].items():
+                section = next((s for s in state["outline"] if s.get("id") == section_id), {})
+                draft_content += f"\n## {section.get('title', section_id)}\n{content}\n"
+            draft_content = draft_content or "（暂无内容）"
 
         self.logger.info(f"[CriticMaster] 待审核内容长度: {len(draft_content)}")
 

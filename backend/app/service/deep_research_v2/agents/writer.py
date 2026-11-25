@@ -285,7 +285,7 @@ class LeadWriter(BaseAgent):
             "section": section.get("title")
         })
 
-        # 收集相关素材
+        # 收集相关素材，优先使用当前章节关联的事实
         related_facts = [f for f in state["facts"] if section_id in f.get("related_sections", [])]
         if not related_facts:
             # 如果没有特定关联，使用所有事实
@@ -330,11 +330,11 @@ class LeadWriter(BaseAgent):
 
         if result and result.get("content"):
             section_content = result["content"]
-            state["draft_sections"][section_id] = section_content
+            state["draft_sections"][section_id] = section_content # 保存章节内容
             section["status"] = "drafted"
 
             # 收集引用
-            for citation in result.get("citations", []):
+            for citation in result.get("citations", []): # 模型生成的章节报告所使用的引用
                 state["references"].append({
                     "id": len(state["references"]) + 1,
                     "marker": citation.get("marker"),
